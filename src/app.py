@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from datastructures import FamilyStructure
+import json
 #from models import Person
 
 app = Flask(__name__)
@@ -27,16 +28,42 @@ def sitemap():
 
 @app.route('/members', methods=['GET'])
 def handle_hello():
-
     # this is how you can use the Family datastructure by calling its methods
     members = jackson_family.get_all_members()
     response_body = {
         "hello": "world",
         "family": members
     }
-
-
     return jsonify(response_body), 200
+
+@app.route('/member', methods=['POST'])
+def add_new_member():
+    request_body = request.data
+    decoded_object = json.loads(request_body)
+
+    new_member = jackson_family.create_member(jackson_family._generate_id(), decoded_object["first_name"],
+    decoded_object["age"], decoded_object["lucky_numbers"])
+
+    new_member_id = jackson_family.add_member(new_member)
+
+    return "Successfully added new member with the id: " + str(new_member_id), 200
+
+@app.route('/member/<int:member_id>', methods=['DELETE'])
+def delete_member(member_id):
+    jackson_family.delete_member(member_id)
+    return {"done": True}, 200
+
+@app.route('/member/<int:member_id>', methods=['PUT'])
+def update_member(member_id):
+    request_body = request.data
+    decoded_object = json.loads(request_body)
+    jackson_family.update_member(member_id, decoded_object)
+    return {"done": True}, 200
+
+@app.route('/member/<int:member_id>', methods=['GET'])
+def get_member(member_id):
+    member_to_return = jackson_family.get_member(member_id)
+    return member_to_return, 200
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
